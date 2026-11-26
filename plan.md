@@ -158,21 +158,21 @@ Tiap sore kirim ke Telegram pemilik:
 
 ERPNext punya Auto Email Report, jadi nilai workflow ini ada pada ringkasan lintas modul yang sampai lewat Telegram.
 
-- [ ] Tetap terkirim dengan angka nol saat tidak ada transaksi
-- [ ] Angkanya cocok dengan laporan di ERPNext
-- [ ] Retur dan dokumen batal tidak membuat total salah
+- [x] Tetap terkirim dengan angka nol saat tidak ada transaksi
+- [x] Angkanya cocok dengan laporan di ERPNext
+- [x] Retur dan dokumen batal tidak membuat total salah
 
 **Selesai jika:** angka sudah dicocokkan manual untuk minimal satu hari berisi transaksi.
 
 ## Fase 9: Kemas untuk portofolio
 
-- [ ] Export semua workflow ke `n8n/workflows/`
-- [ ] **Periksa JSON dan riwayat git:** tidak ada token, API secret, password, atau chat ID
-- [ ] README: masalah, diagram arsitektur, cara menjalankan, keputusan teknis, keterbatasan
+- [x] Export semua workflow ke `n8n/workflows/`
+- [x] **Periksa JSON dan riwayat git:** tidak ada token, API secret, password, atau chat ID
+- [x] README: masalah, diagram arsitektur, cara menjalankan, keputusan teknis, keterbatasan
 - [ ] Screenshot: canvas tiap workflow, draf Material Request, pesan Telegram
 - [ ] Video demo 1–2 menit: stok berkurang → workflow jalan → pesan masuk → dokumen muncul
-- [ ] Cover **2400×1260** (rasio 1200:630)
-- [ ] Coba setup ulang dari nol mengikuti README sendiri
+- [x] Cover **2400×1260** (rasio 1200:630)
+- [x] Coba setup ulang dari nol mengikuti README sendiri
 - [ ] Perbarui kartu ERP di web portofolio: judul, deskripsi, foto, tag, status
 
 ## Tambahan (opsional, setelah semua selesai)

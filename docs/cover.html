@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Cover portofolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden; padding: 64px 72px;
+    background: #12202e; color: #f4f1ea; font-family: "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .eyebrow { font-size: 22px; letter-spacing: .06em; color: #f2a93b; font-weight: 600; }
+  h1 { font-size: 66px; line-height: 1.08; margin-top: 18px; max-width: 920px; }
+  p { font-size: 26px; color: #b9c4cf; margin-top: 18px; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card { background: #1c2e40; border-top: 4px solid #f2a93b; border-radius: 10px; padding: 20px; }
+  .card b { display: block; font-size: 22px; }
+  .card span { display: block; font-size: 17px; color: #b9c4cf; margin-top: 8px; line-height: 1.4; }
+  footer { display: flex; justify-content: space-between; font-size: 19px; color: #8fa0b0; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">ERPNext v16 + n8n + Telegram</div>
+    <h1>Otomasi operasional toko material bangunan</h1>
+    <p>Stok, tagihan, dan laporan harian tanpa harus dicek manual.</p>
+  </header>
+  <div class="cards">
+    <div class="card"><b>Stok menipis</b><span>Draf Material Request dan satu pesan gabungan</span></div>
+    <div class="card"><b>Jatuh tempo</b><span>Email pengingat, maksimal sekali per 7 hari</span></div>
+    <div class="card"><b>Laporan harian</b><span>Penjualan, kas masuk, piutang, stok</span></div>
+    <div class="card"><b>Notifikasi error</b><span>Kegagalan terjadwal langsung diketahui</span></div>
+  </div>
+  <footer>
+    <span>CV. Bangunan Jaya Makmur</span>
+    <span>Proyek portofolio · perusahaan dan data fiktif</span>
+  </footer>
+</body>
+</html>

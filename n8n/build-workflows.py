@@ -220,7 +220,7 @@ email = ESC + RUPIAH + r"""
 const i = $input.first().json;
 const html = [
   `<p>Yth. ${esc(i.customer_name)},</p>`,
-  `<p>Tagihan <b>${esc(i.name)}</b> telah melewati jatuh tempo pada ${i.due_date}.</p>`,
+  `<p>Tagihan <b>${esc(i.name)}</b> telah melewati jatuh tempo pada ${DateTime.fromISO(i.due_date).toFormat('dd-MM-yyyy')}.</p>`,
   `<p>Sisa tagihan: <b>${rupiah(i.outstanding_amount)}</b></p>`,
   '<p>Mohon segera melakukan pembayaran. Abaikan email ini bila sudah dibayar.</p>',
   '<p>Salam,<br>Bagian Keuangan CV. Bangunan Jaya Makmur</p>',

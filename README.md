@@ -2,6 +2,10 @@
 
 Otomasi operasional toko material bangunan **fiktif**. Semua nama, email, dan angka adalah data contoh.
 
+![Cover](docs/cover.png)
+
+**Status:** demo lokal, belum di-deploy. Diuji pada 27 November 2026 dari salinan repo yang bersih: setup empat perintah, hak akses user API, stok menipis, pengingat tagihan (Mailpit), dan laporan harian yang dicocokkan dengan laporan ERPNext termasuk retur dan dokumen batal. Notifikasi error diuji pada eksekusi terjadwal.
+
 ## Masalah
 
 | Masalah | Otomasi |
@@ -72,6 +76,18 @@ node seed/uji-laporan.mjs                     # cocokkan laporan harian dengan l
 
 `uji-laporan.mjs --transaksi-uji` juga menguji retur dan pembatalan, tetapi meninggalkan dokumen yang tidak bisa dihapus. Jalankan hanya di instance uji.
 
+## Tampilan
+
+| Stok menipis | Tagihan jatuh tempo |
+|---|---|
+| ![Workflow stok menipis](docs/screenshots/n8n-stok-menipis.png) | ![Workflow tagihan](docs/screenshots/n8n-tagihan-jatuh-tempo.png) |
+| **Laporan harian** | **Notifikasi error** |
+| ![Workflow laporan](docs/screenshots/n8n-laporan-harian.png) | ![Workflow error](docs/screenshots/n8n-notifikasi-error.png) |
+| **Draf Material Request** | **Email pengingat** |
+| ![Material Request](docs/screenshots/erpnext-material-request.png) | ![Email](docs/screenshots/mailpit-isi-email.png) |
+
+Skenario video demo: [docs/demo.md](docs/demo.md).
+
 ## Struktur
 
 ```
@@ -104,6 +120,7 @@ docs/                       skenario demo dan screenshot
 - Bila pesan Telegram gagal setelah Material Request dibuat, run berikutnya melewati barang itu, jadi pesannya tidak dikirim ulang. Notifikasi error juga lewat Telegram.
 - **Kas masuk** hanya menghitung Payment Entry tipe Receive. Pembayaran langsung di invoice POS dan Journal Entry tidak ikut.
 - **Piutang** dihitung dari sisa tagihan invoice; uang muka yang belum dialokasikan tidak dikurangkan.
+- **Retur** di ERPNext tercatat sebagai nota kredit terpisah. Sampai direkonsiliasi (Payment Reconciliation), sisa tagihan invoice asli tidak berkurang, sehingga email pengingat masih menyebut jumlah penuh. Di laporan, nota kredit baru mengurangi piutang lewat tempo setelah tanggal jatuh temponya sendiri lewat.
 - Angka stok di laporan adalah kondisi saat laporan dikirim.
 - Link di pesan Telegram mengarah ke `localhost`, hanya bisa dibuka dari komputer yang menjalankan stack.
 - `node n8n/import.mjs` menimpa workflow di n8n dengan isi `n8n/workflows/`. Export dulu perubahan yang dibuat lewat editor.
