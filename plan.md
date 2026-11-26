@@ -48,12 +48,12 @@ Jangan menebak versi atau perintah instalasi. Cek yang terbaru di:
 
 ## Fase 1: ERPNext jalan
 
-- [ ] `git init`, buat struktur folder, `.gitignore`, `.env.example`
-- [ ] Jalankan ERPNext v16 lewat `frappe_docker` (setup demo cukup untuk lokal, **bukan** untuk produksi)
-- [ ] Pastikan data tersimpan di volume
-- [ ] Ganti password Administrator bawaan
-- [ ] Buat company, mata uang IDR, tahun fiskal, zona waktu, bahasa Indonesia
-- [ ] Buat gudang (misalnya Gudang Utama dan Toko)
+- [x] `git init`, buat struktur folder, `.gitignore`, `.env.example`
+- [x] Jalankan ERPNext v16 lewat `frappe_docker` (setup demo cukup untuk lokal, **bukan** untuk produksi)
+- [x] Pastikan data tersimpan di volume
+- [x] Ganti password Administrator bawaan
+- [x] Buat company, mata uang IDR, tahun fiskal, zona waktu, bahasa Indonesia
+- [x] Buat gudang (misalnya Gudang Utama dan Toko)
 
 **Selesai jika:** bisa login, dan data masih ada setelah container di-restart.
 
@@ -61,11 +61,11 @@ Jangan menebak versi atau perintah instalasi. Cek yang terbaru di:
 
 Tulis skrip (Node.js atau Python) di `seed/` yang mengisi data lewat REST API.
 
-- [ ] ±20 barang (semen, besi, cat, pipa, dll.) lengkap dengan **reorder level** dan reorder qty per gudang
-- [ ] 3–5 supplier, 8–10 pelanggan dengan **email uji**
-- [ ] Stok awal, dengan beberapa barang sengaja dekat batas minimum
-- [ ] Sales Invoice, sebagian sengaja **lewat jatuh tempo**
-- [ ] Skrip aman dijalankan dua kali (tidak membuat data dobel)
+- [x] ±20 barang (semen, besi, cat, pipa, dll.) lengkap dengan **reorder level** dan reorder qty per gudang
+- [x] 3–5 supplier, 8–10 pelanggan dengan **email uji**
+- [x] Stok awal, dengan beberapa barang sengaja dekat batas minimum
+- [x] Sales Invoice, sebagian sengaja **lewat jatuh tempo**
+- [x] Skrip aman dijalankan dua kali (tidak membuat data dobel)
 
 Untuk tahap awal skrip boleh memakai API key admin. Key ini hanya untuk seeding, tidak dipakai n8n.
 
@@ -73,17 +73,17 @@ Untuk tahap awal skrip boleh memakai API key admin. Key ini hanya untuk seeding,
 
 ## Fase 3: User API
 
-- [ ] Buat user `n8n-bot` dengan role khusus
-- [ ] Beri **baca** untuk Item, Bin, Sales Invoice, Payment Entry, Customer
-- [ ] Beri **baca + buat** untuk Material Request
-- [ ] Tambahkan izin lain hanya saat benar-benar dibutuhkan
-- [ ] Generate API key dan secret, simpan di `.env`
+- [x] Buat user `n8n-bot` dengan role khusus
+- [x] Beri **baca** untuk Item, Bin, Sales Invoice, Payment Entry, Customer
+- [x] Beri **baca + buat** untuk Material Request
+- [x] Tambahkan izin lain hanya saat benar-benar dibutuhkan
+- [x] Generate API key dan secret, simpan di `.env`
 
 Uji:
 
 ```bash
 curl -H "Authorization: token API_KEY:API_SECRET" \
-  "http://localhost:8080/api/resource/Item?limit_page_length=5"
+  "http://localhost:8081/api/resource/Item?limit_page_length=5"
 ```
 
 Sesuaikan port dengan setup kamu.

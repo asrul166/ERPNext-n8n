@@ -1,0 +1,402 @@
+{
+  "id": "bjmStokMenipis01",
+  "name": "BJM - Stok Menipis",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "40cb2aa5-2098-53d4-b3f3-722eeba86085",
+      "name": "Tiap Pagi 08.00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "050d2a57-8d4d-57d2-b3e4-c3fb7c75bc81",
+      "name": "Jalankan Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Item",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filters",
+              "value": "[[\"disabled\",\"=\",0],[\"is_stock_item\",\"=\",1]]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "d99024e5-631f-5f10-9e28-e8958263346c",
+      "name": "Daftar Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "e16162f6-fd21-503a-8980-c5437a4d3e2f",
+      "name": "Pisah per Item",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Item/{{ encodeURIComponent($json.name) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "39d9e406-1444-5a6f-b87b-1ca22b223b1d",
+      "name": "Detail Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Bin",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"item_code\",\"warehouse\",\"projected_qty\"]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "699fb038-18a8-5488-95f6-3dc49ae5a69d",
+      "name": "Stok per Gudang",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Material%20Request",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\",\"status\",\"items.item_code\",\"items.warehouse\"]"
+            },
+            {
+              "name": "filters",
+              "value": "[[\"docstatus\",\"<\",2],[\"material_request_type\",\"=\",\"Purchase\"],[\"status\",\"not in\",[\"Stopped\",\"Cancelled\",\"Received\",\"Transferred\",\"Issued\",\"Manufactured\"]]]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "0ede9d76-5fe1-5def-8232-3d20a2f29306",
+      "name": "MR Belum Selesai",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('Detail Item').all().map((i) => i.json.data);\nconst bins = $('Stok per Gudang').first().json.data;\nconst open = $('MR Belum Selesai').first().json.data;\n\nconst key = (item, warehouse) => `${item}|${warehouse}`;\nconst projected = new Map(bins.map((b) => [key(b.item_code, b.warehouse), b.projected_qty]));\nconst pending = new Set(open.map((r) => key(r.item_code, r.warehouse)));\n\nconst rows = [];\nlet company;\nfor (const item of items) {\n  for (const r of item.reorder_levels ?? []) {\n    if (r.material_request_type !== 'Purchase') continue;\n    const level = r.warehouse_reorder_level;\n    let qty = r.warehouse_reorder_qty;\n    if (!level && !qty) continue;\n    // Belum pernah ada transaksi = tidak ada baris Bin = stok 0.\n    const stock = projected.get(key(item.name, r.warehouse)) ?? 0;\n    if (stock > level || pending.has(key(item.name, r.warehouse))) continue;\n    // Sama seperti ERPNext: pesanan harus cukup untuk mengembalikan stok ke atas batas.\n    if (stock + qty <= level) qty += level - stock;\n    if (qty <= 0) continue;\n    company ??= item.item_defaults?.[0]?.company;\n    rows.push({\n      item_code: item.name, item_name: item.item_name, warehouse: r.warehouse,\n      uom: item.stock_uom, stock, level, qty,\n    });\n  }\n}\n\n// Tidak ada yang perlu dipesan: alur berhenti di sini, tanpa dokumen dan tanpa pesan.\nif (!rows.length) return [];\n\nconst today = $now.toFormat('yyyy-MM-dd');\nconst needBy = $now.plus({ days: 7 }).toFormat('yyyy-MM-dd');\nconst body = {\n  material_request_type: 'Purchase',\n  company,\n  transaction_date: today,\n  schedule_date: needBy,\n  items: rows.map((r) => ({\n    item_code: r.item_code, qty: r.qty, warehouse: r.warehouse, schedule_date: needBy,\n    uom: r.uom, stock_uom: r.uom, conversion_factor: 1,\n  })),\n};\nreturn [{ json: { body, rows } }];"
+      },
+      "id": "6e4d8374-1fc4-51a5-b6eb-b19a050699b1",
+      "name": "Saring Stok Menipis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Material%20Request",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "160f6343-5f93-5c4d-b6cb-45850fb2ff2d",
+      "name": "Buat Draf Material Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst rows = $('Saring Stok Menipis').first().json.rows;\nconst name = $input.first().json.data.name;\nconst MAX = 30;\nconst lines = rows.slice(0, MAX).map((r) =>\n  `• <b>${esc(r.item_name)}</b> (${esc(r.warehouse)})\\n  stok ${r.stock}, batas ${r.level} → minta ${r.qty} ${esc(r.uom)}`);\nif (rows.length > MAX) lines.push(`… dan ${rows.length - MAX} baris lagi`);\nconst url = `${$env.ERPNEXT_PUBLIC_URL}/desk/material-request/${encodeURIComponent(name)}`;\nreturn [{ json: { text: [\n  `📦 <b>Stok menipis: ${rows.length} baris</b>`,\n  ...lines,\n  '',\n  `Draf Material Request: ${esc(name)}`,\n  url,\n].join('\\n') } }];"
+      },
+      "id": "8fef1f8e-7c55-5dcb-a111-81b01007e5f4",
+      "name": "Susun Pesan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "20799501-fd27-590e-893d-66e7613422a3",
+      "name": "Kirim Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1980,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "bjmTelegramBot01",
+          "name": "Telegram BJM"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tiap Pagi 08.00": {
+      "main": [
+        [
+          {
+            "node": "Daftar Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daftar Item": {
+      "main": [
+        [
+          {
+            "node": "Pisah per Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pisah per Item": {
+      "main": [
+        [
+          {
+            "node": "Detail Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detail Item": {
+      "main": [
+        [
+          {
+            "node": "Stok per Gudang",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stok per Gudang": {
+      "main": [
+        [
+          {
+            "node": "MR Belum Selesai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MR Belum Selesai": {
+      "main": [
+        [
+          {
+            "node": "Saring Stok Menipis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Saring Stok Menipis": {
+      "main": [
+        [
+          {
+            "node": "Buat Draf Material Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buat Draf Material Request": {
+      "main": [
+        [
+          {
+            "node": "Susun Pesan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Pesan": {
+      "main": [
+        [
+          {
+            "node": "Kirim Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jalankan Manual": {
+      "main": [
+        [
+          {
+            "node": "Daftar Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Makassar",
+    "errorWorkflow": "bjmErrorHandler1"
+  },
+  "active": false,
+  "pinData": {}
+}
