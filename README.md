@@ -49,7 +49,7 @@ node n8n/import.mjs             # credential dan workflow n8n
 | n8n | http://localhost:5678 | akun owner dibuat saat pertama dibuka |
 | Mailpit | http://localhost:8025 | kotak uji email, tidak ada email yang keluar |
 
-Port bisa diubah di `.env`.
+Port bisa diubah di `.env`. Untuk menjalankan salinan kedua berdampingan, isi `COMPOSE_PROJECT_NAME` (nama lain) di `.env` salinan itu, lalu ganti `ERPNEXT_PORT`, `ERPNEXT_PUBLIC_URL`, `N8N_PORT`, dan `MAILPIT_PORT`.
 
 ### Telegram
 
@@ -73,6 +73,8 @@ node seed/stock.mjs reset                     # stok awal, hapus Material Reques
 node seed/uji-tagihan.mjs                     # pengingat tagihan lewat Mailpit (menghapus log pengingat)
 node seed/uji-laporan.mjs                     # cocokkan laporan harian dengan laporan ERPNext
 ```
+
+`uji-laporan.mjs` mengirim beberapa pesan ke grup Telegram dan meninggalkan workflow *UJI - Laporan Harian* (tidak aktif) di n8n; hapus lewat editor bila perlu.
 
 `uji-laporan.mjs --transaksi-uji` juga menguji retur dan pembatalan, tetapi meninggalkan dokumen yang tidak bisa dihapus. Jalankan hanya di instance uji.
 
@@ -120,6 +122,7 @@ docs/                       skenario demo dan screenshot
 - Bila pesan Telegram gagal setelah Material Request dibuat, run berikutnya melewati barang itu, jadi pesannya tidak dikirim ulang. Notifikasi error juga lewat Telegram.
 - **Kas masuk** hanya menghitung Payment Entry tipe Receive. Pembayaran langsung di invoice POS dan Journal Entry tidak ikut.
 - **Piutang** dihitung dari sisa tagihan invoice; uang muka yang belum dialokasikan tidak dikurangkan.
+- Rekap tagihan hanya dikirim bila ada invoice yang diproses. Hari tanpa yang perlu diingatkan tidak menghasilkan pesan.
 - **Retur** di ERPNext tercatat sebagai nota kredit terpisah. Sampai direkonsiliasi (Payment Reconciliation), sisa tagihan invoice asli tidak berkurang, sehingga email pengingat masih menyebut jumlah penuh. Di laporan, nota kredit baru mengurangi piutang lewat tempo setelah tanggal jatuh temponya sendiri lewat.
 - Angka stok di laporan adalah kondisi saat laporan dikirim.
 - Link di pesan Telegram mengarah ke `localhost`, hanya bisa dibuka dari komputer yang menjalankan stack.
