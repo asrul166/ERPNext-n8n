@@ -1,9 +1,15 @@
 # Menjalankan workflow lewat CLI n8n dan meringkas hasil tiap node.
-import json, subprocess, sys
+import json, pathlib, subprocess, sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+CONTAINER = subprocess.run(
+    ['docker', 'compose', '--env-file', '.env', '-f', 'docker/compose.yaml', 'ps', '-q', 'n8n'],
+    cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+sys.stdout.reconfigure(encoding='utf-8')
 
 wf = sys.argv[1] if len(sys.argv) > 1 else 'bjmStokMenipis01'
 proc = subprocess.run(
-    ['docker', 'exec', '-e', 'N8N_RUNNERS_BROKER_PORT=5690', 'bjm-n8n-1', 'n8n', 'execute', f'--id={wf}', '--rawOutput'],
+    ['docker', 'exec', '-e', 'N8N_RUNNERS_BROKER_PORT=5690', CONTAINER, 'n8n', 'execute', f'--id={wf}', '--rawOutput'],
     capture_output=True, text=True, encoding='utf-8')
 out = proc.stdout
 start = out.find('{')
@@ -27,5 +33,5 @@ for name, runs in result['runData'].items():
             print('    ', r['item_code'], r['warehouse'], 'stok', r['stock'], 'batas', r['level'], 'minta', r['qty'])
     if name == 'Buat Draf Material Request' and items:
         print('    ', items[0]['json']['data']['name'])
-    if name == 'Susun Pesan' and items:
+    if name in ('Susun Pesan', 'Susun Rekap', 'Susun Laporan') and items:
         print(items[0]['json']['text'])

@@ -2,6 +2,7 @@
 import { BASE_URL, call, create, ensure, env, get, setEnv, update } from './lib.mjs';
 
 const ROLE = 'n8n Bot';
+const REMINDER_LOG = 'Log Pengingat Tagihan';
 export const BOT_USER = 'n8n-bot@example.com';
 
 // Hanya yang dibutuhkan. Tambah izin baru di sini bila sebuah workflow benar-benar memerlukannya.
@@ -35,6 +36,34 @@ async function ensurePermissions() {
   }
 }
 
+/** DocType kecil untuk mencatat pengingat, agar bot tidak perlu izin tulis ke Sales Invoice. */
+async function ensureReminderLog() {
+  const field = (fieldname, label, fieldtype, extra = {}) => ({ fieldname, label, fieldtype, in_list_view: 1, ...extra });
+  // Nilai bawaan baris izin Frappe menyalakan write, delete, dll. Isi semuanya secara eksplisit.
+  const rule = (role, ...allowed) => ({
+    role,
+    ...Object.fromEntries(['read', ...OTHERS].map((ptype) => [ptype, allowed.includes(ptype) ? 1 : 0])),
+  });
+  const permissions = [rule('System Manager', 'read', 'write', 'create', 'delete'), rule(ROLE, 'read', 'create')];
+
+  await ensure('DocType', REMINDER_LOG, {
+    name: REMINDER_LOG,
+    module: 'Accounts',
+    custom: 1,
+    autoname: 'format:PGT-{#####}',
+    fields: [
+      field('sales_invoice', 'Sales Invoice', 'Link', { options: 'Sales Invoice', reqd: 1 }),
+      field('customer', 'Pelanggan', 'Link', { options: 'Customer' }),
+      field('email', 'Email', 'Data'),
+      field('reminded_on', 'Tanggal Pengingat', 'Date', { reqd: 1 }),
+      field('outstanding_amount', 'Sisa Tagihan', 'Currency'),
+      field('reminder_key', 'Kunci', 'Data', { unique: 1, reqd: 1, in_list_view: 0 }),
+    ],
+    permissions,
+  });
+  await update('DocType', REMINDER_LOG, { permissions });
+}
+
 async function keysWork() {
   if (!env.ERPNEXT_API_KEY || !env.ERPNEXT_API_SECRET) return false;
   const res = await fetch(`${BASE_URL}/api/method/frappe.auth.get_logged_user`, {
@@ -46,6 +75,7 @@ async function keysWork() {
 export default async function setupApiUser() {
   await ensure('Role', ROLE, { role_name: ROLE, desk_access: 1 });
   await ensurePermissions();
+  await ensureReminderLog();
 
   if (!(await get('User', BOT_USER))) {
     await create('User', {

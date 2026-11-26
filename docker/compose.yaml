@@ -188,6 +188,9 @@ services:
       ERPNEXT_URL: http://frontend:8080
       ERPNEXT_PUBLIC_URL: ${ERPNEXT_PUBLIC_URL:-http://localhost:8081}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TELEGRAM_FINANCE_CHAT_ID: ${TELEGRAM_FINANCE_CHAT_ID:-}
+      TELEGRAM_OWNER_CHAT_ID: ${TELEGRAM_OWNER_CHAT_ID:-}
+      SMTP_FROM: ${SMTP_FROM:-keuangan@bjm.example.com}
     volumes:
       - n8n_data:/home/node/.n8n
 
@@ -196,7 +199,7 @@ services:
     networks: [bjm]
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
 
 volumes:
   db-data:
@@ -207,5 +210,5 @@ volumes:
 
 networks:
   bjm:
-    name: bjm
+    name: ${COMPOSE_PROJECT_NAME:-bjm}
     driver: bridge

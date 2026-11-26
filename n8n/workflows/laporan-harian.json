@@ -1,0 +1,486 @@
+{
+  "id": "bjmLaporanHari01",
+  "name": "BJM - Laporan Harian",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "id": "5b04740f-1886-5a9d-88a7-f51ac2a122dc",
+      "name": "Tiap Sore 17.00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "dc00e48f-5449-5f6f-b0c9-abf7c2bbfc8f",
+      "name": "Jalankan Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tanggal",
+              "name": "tanggal",
+              "type": "string",
+              "value": "={{ $now.toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a01840b-8736-5194-9f9d-842dab147c82",
+      "name": "Tanggal Laporan",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Sales%20Invoice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\",\"base_grand_total\",\"is_return\"]"
+            },
+            {
+              "name": "filters",
+              "value": "={{ JSON.stringify([[\"docstatus\",\"=\",1],[\"posting_date\",\"=\",$('Tanggal Laporan').first().json.tanggal]]) }}"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "5957948c-6b07-51b9-b586-a77ca8b49a49",
+      "name": "Penjualan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Payment%20Entry",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\",\"base_received_amount\"]"
+            },
+            {
+              "name": "filters",
+              "value": "={{ JSON.stringify([[\"docstatus\",\"=\",1],[\"payment_type\",\"=\",\"Receive\"],[\"posting_date\",\"=\",$('Tanggal Laporan').first().json.tanggal]]) }}"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "d9adb638-55e2-5f50-b494-71011c0b8534",
+      "name": "Kas Masuk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Sales%20Invoice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\",\"outstanding_amount\"]"
+            },
+            {
+              "name": "filters",
+              "value": "={{ JSON.stringify([[\"docstatus\",\"=\",1],[\"outstanding_amount\",\"!=\",0],[\"due_date\",\"<\",$('Tanggal Laporan').first().json.tanggal]]) }}"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "6d2139f7-4412-5c5f-8cbf-69b06f7e981f",
+      "name": "Piutang Lewat Tempo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Item",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filters",
+              "value": "[[\"disabled\",\"=\",0],[\"is_stock_item\",\"=\",1]]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "6c79284f-797a-5c18-9150-f2af196a1d9b",
+      "name": "Daftar Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "d1b9a361-39fc-5af0-8f4d-30447925d4b3",
+      "name": "Pisah per Item",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Item/{{ encodeURIComponent($json.name) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "83898fbb-bfb1-55d8-a019-4e05be01bf6b",
+      "name": "Detail Item",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Bin",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"item_code\",\"warehouse\",\"projected_qty\"]"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "30be4ad2-e373-58d9-8863-d9ad76b3e9f8",
+      "name": "Stok per Gudang",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst rupiah = (n) => (n < 0 ? '-' : '') + 'Rp ' + String(Math.round(Math.abs(n))).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\n\nconst key = (item, warehouse) => `${item}|${warehouse}`;\n\nfunction lowStock(items, bins) {\n  const projected = new Map(bins.map((b) => [key(b.item_code, b.warehouse), b.projected_qty]));\n  const rows = [];\n  for (const item of items) {\n    for (const r of item.reorder_levels ?? []) {\n      if (r.material_request_type !== 'Purchase') continue;\n      const level = r.warehouse_reorder_level;\n      let qty = r.warehouse_reorder_qty;\n      if (!level && !qty) continue;\n      // Belum pernah ada transaksi = tidak ada baris Bin = stok 0.\n      const stock = projected.get(key(item.name, r.warehouse)) ?? 0;\n      if (stock > level) continue;\n      // Sama seperti ERPNext: pesanan harus cukup untuk mengembalikan stok ke atas batas.\n      if (stock + qty <= level) qty += level - stock;\n      rows.push({\n        item_code: item.name, item_name: item.item_name, warehouse: r.warehouse,\n        uom: item.stock_uom, company: item.item_defaults?.[0]?.company, stock, level, qty,\n      });\n    }\n  }\n  return rows;\n}\n\nconst date = $('Tanggal Laporan').first().json.tanggal;\nconst data = (name) => $(name).first().json.data;\nconst sum = (rows, field) => rows.reduce((total, r) => total + r[field], 0);\n\nconst sales = data('Penjualan');       // retur bernilai negatif, dokumen batal tidak ikut\nconst returns = sales.filter((s) => s.is_return);\nconst cash = data('Kas Masuk');\nconst overdue = data('Piutang Lewat Tempo');\nconst low = lowStock($('Detail Item').all().map((i) => i.json.data), $input.first().json.data);\n\nconst lines = [\n  `📊 <b>Laporan harian ${date}</b>`,\n  '',\n  `Penjualan: <b>${rupiah(sum(sales, 'base_grand_total'))}</b> (${sales.length - returns.length} invoice` +\n    (returns.length ? `, ${returns.length} retur ${rupiah(sum(returns, 'base_grand_total'))}` : '') + ')',\n  `Kas masuk: <b>${rupiah(sum(cash, 'base_received_amount'))}</b> (${cash.length} pembayaran)`,\n  `Piutang lewat jatuh tempo: <b>${rupiah(sum(overdue, 'outstanding_amount'))}</b> (${overdue.filter((o) => o.outstanding_amount > 0).length} invoice)`,\n  `Barang di bawah batas minimum: <b>${low.length}</b>`,\n  ...low.slice(0, 15).map((r) => `• ${esc(r.item_name)} (${esc(r.warehouse)}): ${r.stock} / ${r.level}`),\n];\nif (low.length > 15) lines.push(`… dan ${low.length - 15} lagi`);\nreturn [{ json: { text: lines.join('\\n') } }];"
+      },
+      "id": "b46c5ba8-e5e1-550a-bac0-5d8be0c5f38c",
+      "name": "Susun Laporan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_OWNER_CHAT_ID || $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "c15968c0-3145-5fe6-b070-df311a25938d",
+      "name": "Kirim ke Pemilik",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "bjmTelegramBot01",
+          "name": "Telegram BJM"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tiap Sore 17.00": {
+      "main": [
+        [
+          {
+            "node": "Tanggal Laporan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tanggal Laporan": {
+      "main": [
+        [
+          {
+            "node": "Penjualan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Penjualan": {
+      "main": [
+        [
+          {
+            "node": "Kas Masuk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kas Masuk": {
+      "main": [
+        [
+          {
+            "node": "Piutang Lewat Tempo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Piutang Lewat Tempo": {
+      "main": [
+        [
+          {
+            "node": "Daftar Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daftar Item": {
+      "main": [
+        [
+          {
+            "node": "Pisah per Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pisah per Item": {
+      "main": [
+        [
+          {
+            "node": "Detail Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detail Item": {
+      "main": [
+        [
+          {
+            "node": "Stok per Gudang",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stok per Gudang": {
+      "main": [
+        [
+          {
+            "node": "Susun Laporan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Laporan": {
+      "main": [
+        [
+          {
+            "node": "Kirim ke Pemilik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jalankan Manual": {
+      "main": [
+        [
+          {
+            "node": "Tanggal Laporan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Makassar",
+    "errorWorkflow": "bjmErrorHandler1"
+  },
+  "active": false,
+  "pinData": {}
+}

@@ -1,0 +1,518 @@
+{
+  "id": "bjmTagihan000001",
+  "name": "BJM - Tagihan Jatuh Tempo",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "e8308c48-fbfe-5fef-9595-a141604b8a9e",
+      "name": "Tiap Pagi 09.00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "004ed3bd-9c16-51e9-a698-99044312e85b",
+      "name": "Jalankan Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Sales%20Invoice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\",\"customer\",\"customer_name\",\"contact_email\",\"due_date\",\"outstanding_amount\"]"
+            },
+            {
+              "name": "filters",
+              "value": "={{ JSON.stringify([[\"docstatus\",\"=\",1],[\"outstanding_amount\",\">\",0],[\"due_date\",\"<\",$now.toFormat('yyyy-MM-dd')]]) }}"
+            },
+            {
+              "name": "order_by",
+              "value": "due_date asc"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "dada5688-45c3-510b-80e0-e4fcc3838d5b",
+      "name": "Invoice Lewat Tempo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Log%20Pengingat%20Tagihan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"sales_invoice\",\"reminded_on\"]"
+            },
+            {
+              "name": "filters",
+              "value": "={{ JSON.stringify([[\"reminded_on\",\">\",$now.minus({days: 7}).toFormat('yyyy-MM-dd')]]) }}"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "id": "0a6d566f-f95f-5224-8eda-5933f2128497",
+      "name": "Log 7 Hari Terakhir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const invoices = $('Invoice Lewat Tempo').first().json.data;\n// Sudah diingatkan dalam 7 hari terakhir (tanggal lebih baru dari H-7) = lewati.\nconst recent = new Set($input.first().json.data.map((l) => l.sales_invoice));\nreturn invoices.filter((i) => !recent.has(i.name)).map((i) => ({ json: i }));"
+      },
+      "id": "059d35eb-e977-5bb2-b218-e6ab08f6ca66",
+      "name": "Pilih Invoice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5d62a3c5-4453-545d-9d0e-57d88c4b6c99",
+      "name": "Per Invoice",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ada-email",
+              "leftValue": "={{ $json.contact_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2c66ba2-3704-5e45-bbc0-c960e1c1546a",
+      "name": "Ada Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst rupiah = (n) => (n < 0 ? '-' : '') + 'Rp ' + String(Math.round(Math.abs(n))).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\n\nconst i = $input.first().json;\nconst html = [\n  `<p>Yth. ${esc(i.customer_name)},</p>`,\n  `<p>Tagihan <b>${esc(i.name)}</b> telah melewati jatuh tempo pada ${i.due_date}.</p>`,\n  `<p>Sisa tagihan: <b>${rupiah(i.outstanding_amount)}</b></p>`,\n  '<p>Mohon segera melakukan pembayaran. Abaikan email ini bila sudah dibayar.</p>',\n  '<p>Salam,<br>Bagian Keuangan CV. Bangunan Jaya Makmur</p>',\n].join('\\n');\nconst today = $now.toFormat('yyyy-MM-dd');\nconst log = {\n  sales_invoice: i.name, customer: i.customer, email: i.contact_email, reminded_on: today,\n  outstanding_amount: i.outstanding_amount, reminder_key: `${i.name}|${today}`,\n};\nreturn [{ json: { ...i, subject: `Pengingat tagihan ${i.name} - CV. Bangunan Jaya Makmur`, html, log } }];"
+      },
+      "id": "97ea3ace-25b5-5af2-8789-778ac8de0f31",
+      "name": "Susun Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ERPNEXT_URL }}/api/resource/Log%20Pengingat%20Tagihan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.log) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1d25e161-a483-57ba-acd2-ec3d0a2048fd",
+      "name": "Catat Pengingat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bjmErpNextAuth01",
+          "name": "ERPNext n8n-bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM }}",
+        "toEmail": "={{ $('Susun Email').first().json.contact_email }}",
+        "subject": "={{ $('Susun Email').first().json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Susun Email').first().json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2f63b363-99ab-5c16-a565-00d9d2f4a115",
+      "name": "Kirim Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1760,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "bjmSmtpLokal0001",
+          "name": "SMTP BJM"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Ada Email').first().json, status: 'terkirim' } }];"
+      },
+      "id": "c2c63dec-3af3-5500-b82c-46f45e5f7eea",
+      "name": "Terkirim",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Ada Email').first().json, status: 'gagal' } }];"
+      },
+      "id": "ce39ab6c-05b7-5c0c-9614-636984b41870",
+      "name": "Gagal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$input.first().json, status: 'tanpa email' } }];"
+      },
+      "id": "8e8bd549-a2d9-5de1-bdb1-908c7db22d12",
+      "name": "Tanpa Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst rupiah = (n) => (n < 0 ? '-' : '') + 'Rp ' + String(Math.round(Math.abs(n))).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\n\nconst rows = $input.all().map((i) => i.json);\nconst section = (title, status) => {\n  const list = rows.filter((r) => r.status === status);\n  if (!list.length) return [];\n  const total = list.reduce((sum, r) => sum + r.outstanding_amount, 0);\n  return ['', `<b>${title}: ${list.length}</b> (${rupiah(total)})`,\n    ...list.slice(0, 30).map((r) => `• ${esc(r.name)} ${esc(r.customer_name)}: ${rupiah(r.outstanding_amount)}, jatuh tempo ${r.due_date}`)];\n};\nreturn [{ json: { text: [\n  '🧾 <b>Pengingat tagihan jatuh tempo</b>',\n  ...section('Email terkirim', 'terkirim'),\n  ...section('Gagal dikirim (tidak diulang selama 7 hari)', 'gagal'),\n  ...section('Tanpa alamat email', 'tanpa email'),\n].join('\\n') } }];"
+      },
+      "id": "a9ad5294-9cb9-5d2a-a801-f5186c606394",
+      "name": "Susun Rekap",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_FINANCE_CHAT_ID || $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "69d965b9-b178-5758-86ef-5b9034a9fb34",
+      "name": "Rekap ke Keuangan",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        -200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "bjmTelegramBot01",
+          "name": "Telegram BJM"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Tiap Pagi 09.00": {
+      "main": [
+        [
+          {
+            "node": "Invoice Lewat Tempo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Lewat Tempo": {
+      "main": [
+        [
+          {
+            "node": "Log 7 Hari Terakhir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log 7 Hari Terakhir": {
+      "main": [
+        [
+          {
+            "node": "Pilih Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pilih Invoice": {
+      "main": [
+        [
+          {
+            "node": "Per Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jalankan Manual": {
+      "main": [
+        [
+          {
+            "node": "Invoice Lewat Tempo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Per Invoice": {
+      "main": [
+        [
+          {
+            "node": "Susun Rekap",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ada Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ada Email": {
+      "main": [
+        [
+          {
+            "node": "Susun Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tanpa Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Email": {
+      "main": [
+        [
+          {
+            "node": "Catat Pengingat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catat Pengingat": {
+      "main": [
+        [
+          {
+            "node": "Kirim Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kirim Email": {
+      "main": [
+        [
+          {
+            "node": "Terkirim",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gagal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Terkirim": {
+      "main": [
+        [
+          {
+            "node": "Per Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gagal": {
+      "main": [
+        [
+          {
+            "node": "Per Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tanpa Email": {
+      "main": [
+        [
+          {
+            "node": "Per Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Rekap": {
+      "main": [
+        [
+          {
+            "node": "Rekap ke Keuangan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Makassar",
+    "errorWorkflow": "bjmErrorHandler1"
+  },
+  "active": false,
+  "pinData": {}
+}

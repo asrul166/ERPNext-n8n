@@ -7,17 +7,18 @@ import { env } from '../seed/lib.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const workflowDir = fileURLToPath(new URL('./workflows/', import.meta.url));
-const CONTAINER = 'bjm-n8n-1';
 // Workflow yang diaktifkan (jadwal / error trigger). Cek koneksi hanya manual.
-const PUBLISH = ['bjmStokMenipis01', 'bjmErrorHandler1'];
+const PUBLISH = ['bjmStokMenipis01', 'bjmTagihan000001', 'bjmLaporanHari01', 'bjmErrorHandler1'];
 
 const docker = (args, options = {}) => execFileSync('docker', args, { cwd: root, encoding: 'utf8', ...options });
-const compose = (...args) => docker(['compose', '--env-file', '.env', '-f', 'docker/compose.yaml', ...args], { stdio: 'inherit' });
-const n8n = (...args) => docker(['exec', CONTAINER, 'n8n', ...args]);
+const COMPOSE = ['compose', '--env-file', '.env', '-f', 'docker/compose.yaml'];
+const compose = (...args) => docker([...COMPOSE, ...args], { stdio: 'inherit' });
+const container = () => docker([...COMPOSE, 'ps', '-q', 'n8n']).trim();
+const n8n = (...args) => docker(['exec', container(), 'n8n', ...args]);
 
 function importJson(command, json) {
   const script = `cat > /tmp/import.json && n8n ${command} --input=/tmp/import.json; code=$?; rm -f /tmp/import.json; exit $code`;
-  docker(['exec', '-i', CONTAINER, 'sh', '-c', script], { input: json, stdio: ['pipe', 'inherit', 'inherit'] });
+  docker(['exec', '-i', container(), 'sh', '-c', script], { input: json, stdio: ['pipe', 'inherit', 'inherit'] });
 }
 
 async function waitForN8n() {
@@ -56,6 +57,22 @@ if (env.TELEGRAM_BOT_TOKEN) {
     data: { accessToken: env.TELEGRAM_BOT_TOKEN },
   });
 }
+const smtpHost = env.SMTP_HOST || 'mailpit';
+const smtpPort = Number(env.SMTP_PORT || 1025);
+credentials.push({
+  id: 'bjmSmtpLokal0001',
+  name: 'SMTP BJM',
+  type: 'smtp',
+  data: {
+    host: smtpHost,
+    port: smtpPort,
+    user: env.SMTP_USER || '',
+    password: env.SMTP_PASSWORD || '',
+    secure: smtpPort === 465,
+    // Mailpit tidak memakai TLS.
+    disableStartTls: smtpHost === 'mailpit',
+  },
+});
 importJson('import:credentials', JSON.stringify(credentials));
 
 for (const file of readdirSync(workflowDir).filter((f) => f.endsWith('.json'))) {
