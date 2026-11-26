@@ -1,0 +1,208 @@
+# Stack lokal CV. Bangunan Jaya Makmur: ERPNext v16 + n8n + Mailpit.
+# Diturunkan dari pwd.yml milik frappe_docker (https://github.com/frappe/frappe_docker).
+# Untuk demo/pengembangan lokal, BUKAN untuk produksi.
+#
+# Jalankan dari root repo:
+#   docker compose --env-file .env -f docker/compose.yaml up -d
+
+name: bjm
+
+x-frappe: &frappe
+  image: frappe/erpnext:v16.61.0
+  networks: [bjm]
+
+x-frappe-volumes: &frappe-volumes
+  - sites:/home/frappe/frappe-bench/sites
+  - logs:/home/frappe/frappe-bench/logs
+
+x-redis-env: &redis-env
+  FRAPPE_REDIS_CACHE: redis://redis-cache:6379
+  FRAPPE_REDIS_QUEUE: redis://redis-queue:6379
+
+services:
+  db:
+    image: mariadb:11.8
+    networks: [bjm]
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+      - --innodb-snapshot-isolation=OFF
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?isi DB_ROOT_PASSWORD di .env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis-cache:
+    image: redis:6.2-alpine
+    networks: [bjm]
+    restart: unless-stopped
+
+  redis-queue:
+    image: redis:6.2-alpine
+    networks: [bjm]
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+
+  configurator:
+    <<: *frappe
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host db;
+        bench set-config -gp db_port 3306;
+        bench set-config -g redis_cache "redis://redis-cache:6379";
+        bench set-config -g redis_queue "redis://redis-queue:6379";
+        bench set-config -g redis_socketio "redis://redis-queue:6379";
+        bench set-config -gp socketio_port 9000;
+    volumes: *frappe-volumes
+
+  create-site:
+    <<: *frappe
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+      configurator:
+        condition: service_completed_successfully
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        if [ -f sites/frontend/site_config.json ]; then
+          echo "Site frontend sudah ada, dilewati"
+        else
+          bench new-site frontend \
+            --mariadb-user-host-login-scope='%' \
+            --admin-password="$$ADMIN_PASSWORD" \
+            --db-root-username=root \
+            --db-root-password="$$DB_ROOT_PASSWORD" \
+            --install-app erpnext \
+            --set-default
+        fi
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?isi ADMIN_PASSWORD di .env}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes: *frappe-volumes
+
+  backend:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
+    volumes: *frappe-volumes
+
+  websocket:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    environment: *redis-env
+    volumes: *frappe-volumes
+
+  frontend:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - websocket
+    command: ["nginx-entrypoint.sh"]
+    stop_signal: SIGQUIT
+    stop_grace_period: 10s
+    environment:
+      BACKEND: backend:8000
+      # Semua request dilayani site ini, apa pun nama host-nya (n8n memakai "frontend").
+      FRAPPE_SITE_NAME_HEADER: frontend
+      SOCKETIO: websocket:9000
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 50m
+    volumes: *frappe-volumes
+    ports:
+      - "127.0.0.1:${ERPNEXT_PORT:-8081}:8080"
+
+  queue-long:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    environment: *redis-env
+    volumes: *frappe-volumes
+
+  queue-short:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
+    command: ["bench", "worker", "--queue", "short,default"]
+    environment: *redis-env
+    volumes: *frappe-volumes
+
+  scheduler:
+    <<: *frappe
+    restart: unless-stopped
+    depends_on:
+      create-site:
+        condition: service_completed_successfully
+    command: ["bench", "schedule"]
+    volumes: *frappe-volumes
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.49.7
+    networks: [bjm]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?isi N8N_ENCRYPTION_KEY di .env}
+      GENERIC_TIMEZONE: Asia/Makassar
+      TZ: Asia/Makassar
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      # Workflow membaca konfigurasi lewat $env supaya chat ID tidak ikut ter-export.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      ERPNEXT_URL: http://frontend:8080
+      ERPNEXT_PUBLIC_URL: ${ERPNEXT_PUBLIC_URL:-http://localhost:8081}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+  mailpit:
+    image: axllent/mailpit:v1.34.0
+    networks: [bjm]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+
+volumes:
+  db-data:
+  redis-queue-data:
+  sites:
+  logs:
+  n8n_data:
+
+networks:
+  bjm:
+    name: bjm
+    driver: bridge
