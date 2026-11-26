@@ -73,8 +73,7 @@ if (telegramReady) {
   // Perubahan status aktif dari CLI baru berlaku setelah n8n dimulai ulang.
   compose('restart', 'n8n');
   await waitForN8n();
-  const active = n8n('list:workflow', '--active=true', '--onlyId').split(/?
-/);
+  const active = n8n('list:workflow', '--active=true', '--onlyId').split(/\s+/);
   const inactive = PUBLISH.filter((id) => !active.includes(id));
   if (inactive.length) throw new Error(`Workflow belum aktif: ${inactive.join(', ')}`);
   console.log(`Selesai. Aktif: ${PUBLISH.join(', ')}`);
