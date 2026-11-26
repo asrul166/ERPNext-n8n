@@ -92,12 +92,12 @@ Sesuaikan port dengan setup kamu.
 
 ## Fase 4: n8n jalan
 
-- [ ] Tambahkan n8n ke Docker Compose dengan volume persisten
-- [ ] Gabungkan ke network ERPNext (cek namanya dengan `docker network ls`)
-- [ ] Set `N8N_ENCRYPTION_KEY`, `GENERIC_TIMEZONE=Asia/Makassar`, `TZ=Asia/Makassar`
-- [ ] Dari n8n, panggil ERPNext lewat **nama service**, bukan `localhost`
-- [ ] Simpan API ERPNext di **Credentials** n8n (Header Auth), jangan ditulis langsung di node
-- [ ] Buat bot lewat @BotFather, siapkan grup uji, catat chat ID
+- [x] Tambahkan n8n ke Docker Compose dengan volume persisten
+- [x] Gabungkan ke network ERPNext (cek namanya dengan `docker network ls`)
+- [x] Set `N8N_ENCRYPTION_KEY`, `GENERIC_TIMEZONE=Asia/Makassar`, `TZ=Asia/Makassar`
+- [x] Dari n8n, panggil ERPNext lewat **nama service**, bukan `localhost`
+- [x] Simpan API ERPNext di **Credentials** n8n (Header Auth), jangan ditulis langsung di node
+- [x] Buat bot lewat @BotFather, siapkan grup uji, catat chat ID
 
 Kalau ERPNext membalas "site not found", periksa pengaturan nama site pada service frontend.
 
@@ -119,19 +119,19 @@ Kalau ERPNext membalas "site not found", periksa pengaturan nama site pada servi
 
 **Skenario uji:**
 
-- [ ] Stok di atas batas → tidak ada dokumen, tidak ada pesan
-- [ ] Satu barang di bawah batas → satu draf MR, satu pesan
-- [ ] Dijalankan lagi → tidak ada duplikat
-- [ ] Tiga barang di bawah batas → satu MR berisi tiga baris
-- [ ] ERPNext dimatikan → error tertangkap, tidak diam saja
+- [x] Stok di atas batas → tidak ada dokumen, tidak ada pesan
+- [x] Satu barang di bawah batas → satu draf MR, satu pesan
+- [x] Dijalankan lagi → tidak ada duplikat
+- [x] Tiga barang di bawah batas → satu MR berisi tiga baris
+- [x] ERPNext dimatikan → error tertangkap, tidak diam saja
 
 **Selesai jika:** semua skenario lolos.
 
 ## Fase 6: Workflow error
 
-- [ ] Buat workflow dengan **Error Trigger** yang mengirim nama workflow, node yang gagal, dan pesan error ke Telegram
-- [ ] Pasang sebagai error workflow di semua workflow
-- [ ] Atur retry pada node HTTP yang aman diulang (yang hanya membaca)
+- [x] Buat workflow dengan **Error Trigger** yang mengirim nama workflow, node yang gagal, dan pesan error ke Telegram
+- [x] Pasang sebagai error workflow di semua workflow
+- [x] Atur retry pada node HTTP yang aman diulang (yang hanya membaca)
 
 **Selesai jika:** kegagalan yang disengaja pada eksekusi terjadwal memunculkan notifikasi. (Eksekusi manual tidak memicu Error Trigger.)
 

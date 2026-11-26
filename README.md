@@ -2,7 +2,7 @@
 
 Otomasi operasional toko material bangunan **fiktif**. Semua nama, email, dan angka adalah data contoh.
 
-**Status:** ERPNext, data contoh, dan user API sudah teruji. Workflow stok menipis teruji sampai pembuatan Material Request; pengiriman Telegram dan notifikasi error belum diuji.
+**Status:** Fase 1-6 teruji: ERPNext, data contoh, user API, workflow stok menipis (termasuk pesan Telegram), dan notifikasi error pada eksekusi terjadwal. Tagihan jatuh tempo dan laporan harian belum dibuat.
 
 ## Masalah
 
@@ -25,7 +25,7 @@ flowchart LR
 
 ## Menjalankan
 
-Butuh Docker (Compose v2) dan Node.js 20 atau lebih baru.
+Butuh Docker (Compose v2) dan Node.js 20 atau lebih baru. Python 3 hanya untuk alat uji `n8n/run-workflow.py`.
 
 ```bash
 node seed/init-env.mjs          # membuat .env dengan password acak
