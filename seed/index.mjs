@@ -1,5 +1,6 @@
 // Satu perintah: node seed/index.mjs
 import setup from './00-setup.mjs';
+import setupApiUser from './10-api-user.mjs';
 import seedData from './20-data.mjs';
 import { BASE_URL, login, waitForSite } from './lib.mjs';
 
@@ -9,6 +10,8 @@ await login();
 
 console.log('Setup perusahaan');
 await setup();
+console.log('User API untuk n8n');
+await setupApiUser();
 console.log('Data contoh');
 await seedData();
 console.log('Selesai.');

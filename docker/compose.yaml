@@ -93,6 +93,9 @@ services:
             --install-app erpnext \
             --set-default
         fi
+        # Buat encryption_key sebelum backend jalan. Jika dibiarkan dibuat saat pertama
+        # dipakai, tiap proses bisa menulis kunci berbeda dan API secret gagal didekripsi.
+        bench --site frontend execute frappe.utils.password.get_encryption_key > /dev/null
     environment:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?isi ADMIN_PASSWORD di .env}
       DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
