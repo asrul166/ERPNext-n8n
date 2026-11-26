@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const workflowDir = fileURLToPath(new URL('./workflows/', import.meta.url));
 const CONTAINER = 'bjm-n8n-1';
 // Workflow yang diaktifkan (jadwal / error trigger). Cek koneksi hanya manual.
-const PUBLISH = ['bjmErrorHandler1', 'bjmStokMenipis01'];
+const PUBLISH = ['bjmStokMenipis01', 'bjmErrorHandler1'];
 
 const docker = (args, options = {}) => execFileSync('docker', args, { cwd: root, encoding: 'utf8', ...options });
 const compose = (...args) => docker(['compose', '--env-file', '.env', '-f', 'docker/compose.yaml', ...args], { stdio: 'inherit' });
@@ -63,11 +63,21 @@ for (const file of readdirSync(workflowDir).filter((f) => f.endsWith('.json'))) 
 }
 
 if (telegramReady) {
-  for (const id of PUBLISH) n8n('publish:workflow', `--id=${id}`);
+  for (const id of PUBLISH) {
+    try {
+      n8n('publish:workflow', `--id=${id}`);
+    } catch (err) {
+      console.error(`Gagal publish ${id}: ${err.stderr || err.message}`);
+    }
+  }
   // Perubahan status aktif dari CLI baru berlaku setelah n8n dimulai ulang.
   compose('restart', 'n8n');
   await waitForN8n();
-  console.log('Selesai. Workflow terjadwal aktif.');
+  const active = n8n('list:workflow', '--active=true', '--onlyId').split(/?
+/);
+  const inactive = PUBLISH.filter((id) => !active.includes(id));
+  if (inactive.length) throw new Error(`Workflow belum aktif: ${inactive.join(', ')}`);
+  console.log(`Selesai. Aktif: ${PUBLISH.join(', ')}`);
 } else {
   console.log('Selesai, tetapi TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID di .env belum lengkap:');
   console.log('workflow TIDAK diaktifkan. Isi lalu jalankan skrip ini lagi.');

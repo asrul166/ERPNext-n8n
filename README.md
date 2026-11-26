@@ -54,6 +54,8 @@ node seed/verify.mjs                          # ringkasan data
 node seed/test-api.mjs                        # hak user n8n-bot
 node seed/stock.mjs SMN-PC-50 utama 40        # buat stok menipis
 node seed/stock.mjs reset                     # stok awal, hapus Material Request
+python n8n/run-workflow.py                    # jalankan stok menipis, ringkas hasil tiap node
+python n8n/run-workflow.py bjmCekKoneksi001   # tes koneksi n8n -> ERPNext -> Telegram
 ```
 
 ## Keputusan teknis
@@ -70,5 +72,6 @@ node seed/stock.mjs reset                     # stok awal, hapus Material Reques
 
 - Hanya untuk lokal/demo (diturunkan dari `pwd.yml` frappe_docker), bukan produksi.
 - `N8N_BLOCK_ENV_ACCESS_IN_NODE=false` supaya chat ID tidak ikut di JSON workflow; akibatnya workflow bisa membaca env container n8n.
+- Jika pengiriman Telegram gagal setelah Material Request dibuat, run berikutnya melewati barang itu (sudah ada MR), jadi pesannya tidak dikirim ulang. Notifikasi error juga lewat Telegram: bila Telegram yang mati, tidak ada pemberitahuan.
 - Link di pesan Telegram mengarah ke `localhost`, hanya bisa dibuka dari komputer yang menjalankan stack.
 - `node n8n/import.mjs` menimpa workflow di n8n dengan isi `n8n/workflows/`. Export dulu perubahan yang dibuat lewat editor.
